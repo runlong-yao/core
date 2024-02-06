@@ -30,6 +30,9 @@ export const MAP_KEY_ITERATE_KEY = Symbol(__DEV__ ? 'Map key iterate' : '')
  * @param type - Defines the type of access to the reactive property.
  * @param key - Identifier of the reactive property to track.
  */
+
+//建立原始对象和依赖的关系
+//Map<object, Map<string, Map<ReactiveEffect, number>>>
 export function track(target: object, type: TrackOpTypes, key: unknown) {
   if (shouldTrack && activeEffect) {
     let depsMap = targetMap.get(target)
@@ -40,6 +43,7 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
     if (!dep) {
       depsMap.set(key, (dep = createDep(() => depsMap!.delete(key))))
     }
+    //activeEffect是在ReactiveEffect.run的时候设置的
     trackEffect(
       activeEffect,
       dep,
@@ -91,6 +95,7 @@ export function trigger(
   } else {
     // schedule runs for SET | ADD | DELETE
     if (key !== void 0) {
+      //key对应的Map<Dep, number>
       deps.push(depsMap.get(key))
     }
 
@@ -124,6 +129,7 @@ export function trigger(
   }
 
   pauseScheduling()
+  //一般情况下就一个
   for (const dep of deps) {
     if (dep) {
       triggerEffects(

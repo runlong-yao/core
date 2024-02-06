@@ -27,8 +27,6 @@ export let activeEffect: ReactiveEffect | undefined
 
 export class ReactiveEffect<T = any> {
   active = true
-
-  //收集了对当前fn对象的依赖
   deps: Dep[] = []
 
   /**
@@ -72,8 +70,9 @@ export class ReactiveEffect<T = any> {
     public fn: () => T,
     public trigger: () => void,
     public scheduler?: EffectScheduler,
+    scope?: EffectScope,
   ) {
-    // recordEffectScope(this, scope)
+    recordEffectScope(this, scope)
   }
 
   public get dirty() {
@@ -105,23 +104,17 @@ export class ReactiveEffect<T = any> {
     if (!this.active) {
       return this.fn()
     }
-    //记录状态
     let lastShouldTrack = shouldTrack
     let lastEffect = activeEffect
     try {
       shouldTrack = true
       activeEffect = this
       this._runnings++
-
-      //__depsLength会被清0
       preCleanupEffect(this)
       return this.fn()
     } finally {
-      //不太确定它是干啥的
       postCleanupEffect(this)
       this._runnings--
-
-      //恢复状态
       activeEffect = lastEffect
       shouldTrack = lastShouldTrack
     }
@@ -147,7 +140,6 @@ function preCleanupEffect(effect: ReactiveEffect) {
 }
 
 function postCleanupEffect(effect: ReactiveEffect) {
-  //清理多余的副作用，可是为啥会有多余副作用呢？
   if (effect.deps && effect.deps.length > effect._depsLength) {
     for (let i = effect._depsLength; i < effect.deps.length; i++) {
       cleanupDepEffect(effect.deps[i], effect)
@@ -298,7 +290,6 @@ export function triggerEffects(
   debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
   pauseScheduling()
-  //effects
   for (const effect of dep.keys()) {
     if (
       effect._dirtyLevel < dirtyLevel &&
@@ -308,8 +299,9 @@ export function triggerEffects(
       effect._dirtyLevel = dirtyLevel
       if (lastDirtyLevel === DirtyLevels.NotDirty) {
         effect._shouldSchedule = true
-
-        //执行job->执行cb
+        if (__DEV__) {
+          effect.onTrigger?.(extend({ effect }, debuggerEventExtraInfo))
+        }
         effect.trigger()
       }
     }

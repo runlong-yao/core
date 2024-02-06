@@ -3,6 +3,8 @@ import { warn } from './warning'
 
 let activeEffectScope: EffectScope | undefined
 
+//用于收集ReactiveEffect，提供cleanup销毁收集的effect
+//比如组件销毁时，需要销毁所有的effect，所以组件在创建的时候需要新建effectScope
 export class EffectScope {
   /**
    * @internal

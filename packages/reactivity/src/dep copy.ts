@@ -1,9 +1,6 @@
 import type { ReactiveEffect } from './effect'
 import type { ComputedRefImpl } from './computed'
 
-//一个对象的key对应一个dep的Map
-//dep是一个Map，存储了ReactiveEffect和清理方法
-
 export type Dep = Map<ReactiveEffect, number> & {
   cleanup: () => void
   computed?: ComputedRefImpl<any>

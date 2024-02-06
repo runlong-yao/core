@@ -172,258 +172,34 @@ export function watch<T = any, Immediate extends Readonly<boolean> = false>(
 function doWatch(
   source: WatchSource | WatchSource[] | WatchEffect | object,
   cb: WatchCallback | null,
-  {
-    immediate,
-    deep,
-    flush,
-    once,
-    onTrack,
-    onTrigger,
-  }: WatchOptions = EMPTY_OBJ,
 ): WatchStopHandle {
-  if (cb && once) {
-    const _cb = cb
-    cb = (...args) => {
-      _cb(...args)
-      unwatch()
-    }
-  }
+  //监听对象1
+  let getter = () =>(source as Function).call(null)
 
-  // TODO remove in 3.5
-  if (__DEV__ && deep !== void 0 && typeof deep === 'number') {
-    warn(
-      `watch() "deep" option with number value will be used as watch depth in future versions. ` +
-        `Please use a boolean instead to avoid potential breakage.`,
-    )
-  }
+  let oldValue: any =  INITIAL_WATCHER_VALUE
 
-  if (__DEV__ && !cb) {
-    if (immediate !== undefined) {
-      warn(
-        `watch() "immediate" option is only respected when using the ` +
-          `watch(source, callback, options?) signature.`,
-      )
-    }
-    if (deep !== undefined) {
-      warn(
-        `watch() "deep" option is only respected when using the ` +
-          `watch(source, callback, options?) signature.`,
-      )
-    }
-    if (once !== undefined) {
-      warn(
-        `watch() "once" option is only respected when using the ` +
-          `watch(source, callback, options?) signature.`,
-      )
-    }
-  }
-
-  const warnInvalidSource = (s: unknown) => {
-    warn(
-      `Invalid watch source: `,
-      s,
-      `A watch source can only be a getter/effect function, a ref, ` +
-        `a reactive object, or an array of these types.`,
-    )
-  }
-
-  const instance = currentInstance
-  const reactiveGetter = (source: object) =>
-    deep === true
-      ? source // traverse will happen in wrapped getter below
-      : // for deep: false, only traverse root-level properties
-        traverse(source, deep === false ? 1 : undefined)
-
-  let getter: () => any
-  let forceTrigger = false
-  let isMultiSource = false
-
-  if (isRef(source)) {
-    getter = () => source.value
-    forceTrigger = isShallow(source)
-  } else if (isReactive(source)) {
-    getter = () => reactiveGetter(source)
-    forceTrigger = true
-  } else if (isArray(source)) {
-    isMultiSource = true
-    forceTrigger = source.some(s => isReactive(s) || isShallow(s))
-    getter = () =>
-      source.map(s => {
-        if (isRef(s)) {
-          return s.value
-        } else if (isReactive(s)) {
-          return reactiveGetter(s)
-        } else if (isFunction(s)) {
-          return callWithErrorHandling(s, instance, ErrorCodes.WATCH_GETTER)
-        } else {
-          __DEV__ && warnInvalidSource(s)
-        }
-      })
-  } else if (isFunction(source)) {
-    if (cb) {
-      // getter with cb
-      getter = () =>
-        callWithErrorHandling(source, instance, ErrorCodes.WATCH_GETTER)
-    } else {
-      // no cb -> simple effect
-      getter = () => {
-        if (cleanup) {
-          cleanup()
-        }
-        return callWithAsyncErrorHandling(
-          source,
-          instance,
-          ErrorCodes.WATCH_CALLBACK,
-          [onCleanup],
-        )
-      }
-    }
-  } else {
-    getter = NOOP
-    __DEV__ && warnInvalidSource(source)
-  }
-
-  // 2.x array mutation watch compat
-  if (__COMPAT__ && cb && !deep) {
-    const baseGetter = getter
-    getter = () => {
-      const val = baseGetter()
-      if (
-        isArray(val) &&
-        checkCompatEnabled(DeprecationTypes.WATCH_ARRAY, instance)
-      ) {
-        traverse(val)
-      }
-      return val
-    }
-  }
-
-  if (cb && deep) {
-    const baseGetter = getter
-    getter = () => traverse(baseGetter())
-  }
-
-  let cleanup: (() => void) | undefined
-  let onCleanup: OnCleanup = (fn: () => void) => {
-    cleanup = effect.onStop = () => {
-      callWithErrorHandling(fn, instance, ErrorCodes.WATCH_CLEANUP)
-      cleanup = effect.onStop = undefined
-    }
-  }
-
-  // in SSR there is no need to setup an actual effect, and it should be noop
-  // unless it's eager or sync flush
-  let ssrCleanup: (() => void)[] | undefined
-  if (__SSR__ && isInSSRComponentSetup) {
-    // we will also not call the invalidate callback (+ runner is not set up)
-    onCleanup = NOOP
-    if (!cb) {
-      getter()
-    } else if (immediate) {
-      callWithAsyncErrorHandling(cb, instance, ErrorCodes.WATCH_CALLBACK, [
-        getter(),
-        isMultiSource ? [] : undefined,
-        onCleanup,
-      ])
-    }
-    if (flush === 'sync') {
-      const ctx = useSSRContext()!
-      ssrCleanup = ctx.__watcherHandles || (ctx.__watcherHandles = [])
-    } else {
-      return NOOP
-    }
-  }
-
-  let oldValue: any = isMultiSource
-    ? new Array((source as []).length).fill(INITIAL_WATCHER_VALUE)
-    : INITIAL_WATCHER_VALUE
   const job: SchedulerJob = () => {
-    if (!effect.active || !effect.dirty) {
-      return
-    }
-    if (cb) {
-      // watch(source, cb)
-      const newValue = effect.run()
-      if (
-        deep ||
-        forceTrigger ||
-        (isMultiSource
-          ? (newValue as any[]).some((v, i) => hasChanged(v, oldValue[i]))
-          : hasChanged(newValue, oldValue)) ||
-        (__COMPAT__ &&
-          isArray(newValue) &&
-          isCompatEnabled(DeprecationTypes.WATCH_ARRAY, instance))
-      ) {
-        // cleanup before running cb again
-        if (cleanup) {
-          cleanup()
-        }
-        callWithAsyncErrorHandling(cb, instance, ErrorCodes.WATCH_CALLBACK, [
-          newValue,
-          // pass undefined as the old value when it's changed for the first time
-          oldValue === INITIAL_WATCHER_VALUE
-            ? undefined
-            : isMultiSource && oldValue[0] === INITIAL_WATCHER_VALUE
-              ? []
-              : oldValue,
-          onCleanup,
-        ])
-        oldValue = newValue
-      }
-    } else {
-      // watchEffect
-      effect.run()
+    //回调方法
+
+    //计算出当前的新值
+    const newValue = effect.run()
+
+    if (hasChanged(newValue, oldValue)){
+      (cb as Function).call(null)
+      
+      oldValue = newValue
     }
   }
 
-  // important: mark the job as a watcher callback so that scheduler knows
-  // it is allowed to self-trigger (#1727)
-  job.allowRecurse = !!cb
+  const effect = new ReactiveEffect(getter, NOOP, job as any)
 
-  let scheduler: EffectScheduler
-  if (flush === 'sync') {
-    scheduler = job as any // the scheduler function gets called directly
-  } else if (flush === 'post') {
-    scheduler = () => queuePostRenderEffect(job, instance && instance.suspense)
-  } else {
-    // default: 'pre'
-    job.pre = true
-    if (instance) job.id = instance.uid
-    scheduler = () => queueJob(job)
-  }
+  const unwatch = () => effect.stop()
 
-  const effect = new ReactiveEffect(getter, NOOP, scheduler)
 
-  const scope = getCurrentScope()
-  const unwatch = () => {
-    effect.stop()
-    if (scope) {
-      remove(scope.effects, effect)
-    }
-  }
+  //获得一个初始值
+  oldValue = effect.run()
+  
 
-  if (__DEV__) {
-    effect.onTrack = onTrack
-    effect.onTrigger = onTrigger
-  }
-
-  // initial run
-  if (cb) {
-    if (immediate) {
-      job()
-    } else {
-      oldValue = effect.run()
-    }
-  } else if (flush === 'post') {
-    queuePostRenderEffect(
-      effect.run.bind(effect),
-      instance && instance.suspense,
-    )
-  } else {
-    effect.run()
-  }
-
-  if (__SSR__ && ssrCleanup) ssrCleanup.push(unwatch)
   return unwatch
 }
 
