@@ -32,17 +32,22 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
   } else if (key === 'style') {
     patchStyle(el, prevValue, nextValue)
   } else if (isOn(key)) {
+    //事件
     // ignore v-model listeners
     if (!isModelListener(key)) {
       patchEvent(el, key, prevValue, nextValue, parentComponent)
     }
   } else if (
     key[0] === '.'
-      ? ((key = key.slice(1)), true)
+      ? //描述符，并返回true
+        ((key = key.slice(1)), true)
       : key[0] === '^'
-        ? ((key = key.slice(1)), false)
-        : shouldSetAsProp(el, key, nextValue, isSVG)
+        ? //奇怪的描述符，返回false
+          ((key = key.slice(1)), false)
+        : //判断其余情况
+          shouldSetAsProp(el, key, nextValue, isSVG)
   ) {
+    //处理描述符，dom特殊属性（value、checked、selected ）
     patchDOMProp(
       el,
       key,
@@ -53,6 +58,7 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
       unmountChildren,
     )
   } else {
+    //处理一般属性
     // special case for <input v-model type="checkbox"> with
     // :true-value & :false-value
     // store value as dom properties since non-string values will be
@@ -62,6 +68,7 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
     } else if (key === 'false-value') {
       ;(el as any)._falseValue = nextValue
     }
+    //处理dom attr中属性
     patchAttr(el, key, nextValue, isSVG, parentComponent)
   }
 }
@@ -129,5 +136,6 @@ function shouldSetAsProp(
     return false
   }
 
+  //是否是dom属性
   return key in el
 }

@@ -4,6 +4,7 @@ import {
   serializeInner as inner,
   nodeOps,
   render,
+  renderToString,
 } from '@vue/runtime-test'
 
 describe('renderer: element', () => {
@@ -15,6 +16,9 @@ describe('renderer: element', () => {
 
   it('should create an element', () => {
     render(h('div'), root)
+
+    // console.log(renderToString(h('div')))
+
     expect(inner(root)).toBe('<div></div>')
   })
 
