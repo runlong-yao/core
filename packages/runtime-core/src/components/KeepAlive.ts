@@ -89,6 +89,7 @@ const KeepAliveImpl: ComponentOptions = {
   },
 
   setup(props: KeepAliveProps, { slots }: SetupContext) {
+    //组件实例
     const instance = getCurrentInstance()!
     // KeepAlive communicates with the instantiated renderer via the
     // ctx where the renderer passes in its internals,
@@ -270,6 +271,7 @@ const KeepAliveImpl: ComponentOptions = {
         (!(rawVNode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) &&
           !(rawVNode.shapeFlag & ShapeFlags.SUSPENSE))
       ) {
+        
         current = null
         return rawVNode
       }
