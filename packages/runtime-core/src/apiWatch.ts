@@ -342,7 +342,6 @@ function doWatch(
       return
     }
     if (cb) {
-      // watch(source, cb)
       const newValue = effect.run()
       if (
         deep ||

@@ -23,12 +23,25 @@ export type DebuggerEventExtraInfo = {
   oldTarget?: Map<any, any> | Set<any>
 }
 
+//记录当前的ReactiveEffect
 export let activeEffect: ReactiveEffect | undefined
+
+//建立effectScope的对象:self
+//依赖于self的对象: child
+//self依赖的对象: parent
+
+/**
+ * reactiveEffect特性：
+ * 1.重新获取self的方法run
+ * 2.触发child更新的方法
+ */
 
 export class ReactiveEffect<T = any> {
   active = true
+  //deps好像用不上
   deps: Dep[] = []
 
+  //对应的computed
   /**
    * Can be attached after creation
    * @internal
@@ -49,6 +62,8 @@ export class ReactiveEffect<T = any> {
    * @internal
    */
   _dirtyLevel = DirtyLevels.Dirty
+
+  //和跟踪相关
   /**
    * @internal
    */
@@ -66,12 +81,24 @@ export class ReactiveEffect<T = any> {
    */
   _depsLength = 0
 
+//建立effectScope的对象:self
+//依赖于self的对象: child
+//self依赖的对象: parent
+
+  /**
+   * 
+   * @param fn 
+   * @param trigger 当self发生改变时需要运行trigger,来触发child的重新计算
+   * @param scheduler 
+   * @param scope 
+   */
   constructor(
     public fn: () => T,
     public trigger: () => void,
     public scheduler?: EffectScheduler,
     scope?: EffectScope,
   ) {
+    //创建时，将reactiveEffect记录到scope
     recordEffectScope(this, scope)
   }
 
@@ -99,6 +126,10 @@ export class ReactiveEffect<T = any> {
     this._dirtyLevel = v ? DirtyLevels.Dirty : DirtyLevels.NotDirty
   }
 
+  /**
+   * 返回计算值并(重新)收集依赖
+   * @returns 
+   */
   run() {
     this._dirtyLevel = DirtyLevels.NotDirty
     if (!this.active) {
@@ -111,6 +142,7 @@ export class ReactiveEffect<T = any> {
       activeEffect = this
       this._runnings++
       preCleanupEffect(this)
+      //执行getter方法
       return this.fn()
     } finally {
       postCleanupEffect(this)
@@ -139,7 +171,14 @@ function preCleanupEffect(effect: ReactiveEffect) {
   effect._depsLength = 0
 }
 
+//deps
+
+//trackEffect会对_depsLength
+//_depsLength
+//逻辑上会保留effect.deps，[猜测]是为了避免多余的dep存effect,effect存dep的操作
+
 function postCleanupEffect(effect: ReactiveEffect) {
+  
   if (effect.deps && effect.deps.length > effect._depsLength) {
     for (let i = effect._depsLength; i < effect.deps.length; i++) {
       cleanupDepEffect(effect.deps[i], effect)
@@ -147,6 +186,12 @@ function postCleanupEffect(effect: ReactiveEffect) {
     effect.deps.length = effect._depsLength
   }
 }
+
+/**
+ * 清除RefBase中dep存储的effect
+ * @param dep 
+ * @param effect 
+ */
 
 function cleanupDepEffect(dep: Dep, effect: ReactiveEffect) {
   const trackId = dep.get(effect)
@@ -260,20 +305,33 @@ export function resetScheduling() {
   }
 }
 
+/**
+ * //建立RefBase和ReactiveEffect的关联
+ * @param effect 
+ * @param dep 
+ * @param debuggerEventExtraInfo 
+ */
 export function trackEffect(
   effect: ReactiveEffect,
   dep: Dep,
   debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
+  
   if (dep.get(effect) !== effect._trackId) {
+    
+    //effect和_trackId加入到dep中
     dep.set(effect, effect._trackId)
     const oldDep = effect.deps[effect._depsLength]
+
     if (oldDep !== dep) {
       if (oldDep) {
         cleanupDepEffect(oldDep, effect)
       }
+      //effect保存dep, depsLength自增
       effect.deps[effect._depsLength++] = dep
     } else {
+      //[为啥]会存在oldDep和dep相同的状况
+      //猜测是某些特殊情况，造成depsLength没有自动增长
       effect._depsLength++
     }
     if (__DEV__) {
