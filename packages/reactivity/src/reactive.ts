@@ -296,9 +296,12 @@ function createReactiveObject(
  * @see {@link https://vuejs.org/api/reactivity-utilities.html#isreactive}
  */
 export function isReactive(value: unknown): boolean {
+  
   if (isReadonly(value)) {
+    //【为啥如此】
     return isReactive((value as Target)[ReactiveFlags.RAW])
   }
+  //检查value的__v_isReactive
   return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
 }
 
@@ -329,6 +332,7 @@ export function isShallow(value: unknown): boolean {
  * @see {@link https://vuejs.org/api/reactivity-utilities.html#isproxy}
  */
 export function isProxy(value: unknown): boolean {
+  //
   return isReactive(value) || isReadonly(value)
 }
 
@@ -357,6 +361,7 @@ export function isProxy(value: unknown): boolean {
  */
 export function toRaw<T>(observed: T): T {
   const raw = observed && (observed as Target)[ReactiveFlags.RAW]
+  //获取内嵌的原始对象
   return raw ? toRaw(raw) : observed
 }
 

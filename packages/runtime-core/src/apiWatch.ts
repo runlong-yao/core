@@ -242,6 +242,7 @@ function doWatch(
     getter = () => source.value
     forceTrigger = isShallow(source)
   } else if (isReactive(source)) {
+    //如果没有deep,只递归单层
     getter = () => reactiveGetter(source)
     forceTrigger = true
   } else if (isArray(source)) {
@@ -300,6 +301,8 @@ function doWatch(
 
   if (cb && deep) {
     const baseGetter = getter
+    //假如ref.value是一个对象，会递归收集依赖
+    //如果source是reactive的，拿不就多执行一次traverse么[感觉是有冗余的]
     getter = () => traverse(baseGetter())
   }
 
@@ -463,12 +466,14 @@ export function createPathGetter(ctx: any, path: string) {
   }
 }
 
+//通过触发getter来收集依赖
 export function traverse(
   value: unknown,
   depth?: number,
   currentDepth = 0,
   seen?: Set<unknown>,
 ) {
+  //一般值直接返回
   if (!isObject(value) || (value as any)[ReactiveFlags.SKIP]) {
     return value
   }

@@ -41,7 +41,6 @@ export class ReactiveEffect<T = any> {
   //deps好像用不上
   deps: Dep[] = []
 
-  //对应的computed
   /**
    * Can be attached after creation
    * @internal
@@ -319,8 +318,12 @@ export function trackEffect(
   
   if (dep.get(effect) !== effect._trackId) {
     
-    //effect和_trackId加入到dep中
+    //effect加入到
+    //执行watch的时候会生成一个effect, 也在这个时间点通过执行getter方法完成了track
+    //所谓track是把ReactiveEffect加入到ref的dep里
+    //把ref的dep存入ReactiveEffect.deps里
     dep.set(effect, effect._trackId)
+    //一般情况下oldDep应该是undefined，相当于一个新的位置
     const oldDep = effect.deps[effect._depsLength]
 
     if (oldDep !== dep) {

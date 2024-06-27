@@ -102,6 +102,7 @@ export function triggerRefValue(
  */
 export function isRef<T>(r: Ref<T> | unknown): r is Ref<T>
 export function isRef(r: any): r is Ref {
+  //检查__v_isRef
   return !!(r && r.__v_isRef === true)
 }
 
@@ -259,6 +260,7 @@ export function unref<T>(ref: MaybeRef<T> | ComputedRef<T>): T {
  * @see {@link https://vuejs.org/api/reactivity-utilities.html#tovalue}
  */
 export function toValue<T>(source: MaybeRefOrGetter<T> | ComputedRef<T>): T {
+  //toValue可以执行getter方法
   return isFunction(source) ? source() : unref(source)
 }
 
@@ -312,6 +314,7 @@ class CustomRefImpl<T> {
   constructor(factory: CustomRefFactory<T>) {
     const { get, set } = factory(
       () => trackRefValue(this),
+      //触发dep中effect方法的执行
       () => triggerRefValue(this),
     )
     this._get = get
@@ -459,11 +462,16 @@ export function toRef(
   key?: string,
   defaultValue?: unknown,
 ): Ref {
+  //ref
   if (isRef(source)) {
     return source
+    //方法
   } else if (isFunction(source)) {
+    //GetterRefImpl
     return new GetterRefImpl(source) as any
   } else if (isObject(source) && arguments.length > 1) {
+    //ObjectRefImpl相当于不同类型对象方法，对于ref类型的实现
+    //toRef的时候会有不同类型的输入，针对不同类型输入，使用不同ref类去实现value
     return propertyToRef(source, key!, defaultValue)
   } else {
     return ref(source)
