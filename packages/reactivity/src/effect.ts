@@ -31,14 +31,15 @@ export let activeEffect: ReactiveEffect | undefined
 //self依赖的对象: parent
 
 /**
- * reactiveEffect特性：
- * 1.重新获取self的方法run
- * 2.触发child更新的方法
+ * 响应式副作用
  */
 
 export class ReactiveEffect<T = any> {
   active = true
-  //deps好像用不上
+
+  /**
+   * 依赖的响应式对象集合
+   */
   deps: Dep[] = []
 
   /**
@@ -97,13 +98,14 @@ export class ReactiveEffect<T = any> {
     public scheduler?: EffectScheduler,
     scope?: EffectScope,
   ) {
-    //创建时，将reactiveEffect记录到scope
+    //scope和effect关联
     recordEffectScope(this, scope)
   }
 
   public get dirty() {
     if (this._dirtyLevel === DirtyLevels.MaybeDirty) {
       pauseTracking()
+          //逐个调用依赖，检查自身是否为脏数据
       for (let i = 0; i < this._depsLength; i++) {
         const dep = this.deps[i]
         if (dep.computed) {
@@ -113,11 +115,14 @@ export class ReactiveEffect<T = any> {
           }
         }
       }
+      //检查过后不是脏数据，修改状态从MaybeDirty=>NotDirty
       if (this._dirtyLevel < DirtyLevels.Dirty) {
         this._dirtyLevel = DirtyLevels.NotDirty
       }
       resetTracking()
     }
+
+    //已经改变
     return this._dirtyLevel >= DirtyLevels.Dirty
   }
 
@@ -305,13 +310,17 @@ export function resetScheduling() {
 }
 
 /**
- * //建立RefBase和ReactiveEffect的关联
+ * 跟踪副作用
  * @param effect 
  * @param dep 
  * @param debuggerEventExtraInfo 
  */
 export function trackEffect(
   effect: ReactiveEffect,
+  // Dep = Map<ReactiveEffect, number> & {
+  //   cleanup: () => void
+  //   computed?: ComputedRefImpl<any>
+  // }
   dep: Dep,
   debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
@@ -322,6 +331,7 @@ export function trackEffect(
     //执行watch的时候会生成一个effect, 也在这个时间点通过执行getter方法完成了track
     //所谓track是把ReactiveEffect加入到ref的dep里
     //把ref的dep存入ReactiveEffect.deps里
+    //dep中存入了reactive
     dep.set(effect, effect._trackId)
     //一般情况下oldDep应该是undefined，相当于一个新的位置
     const oldDep = effect.deps[effect._depsLength]
@@ -330,7 +340,7 @@ export function trackEffect(
       if (oldDep) {
         cleanupDepEffect(oldDep, effect)
       }
-      //effect保存dep, depsLength自增
+      //effect中保存了和ref相关的dep
       effect.deps[effect._depsLength++] = dep
     } else {
       //[为啥]会存在oldDep和dep相同的状况

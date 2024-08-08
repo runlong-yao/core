@@ -1,10 +1,7 @@
 import type { ReactiveEffect } from './effect'
 import type { ComputedRefImpl } from './computed'
 
-/**
- * ReactiveEffect: ReacticeEffect对象
- * number: 每次设置时ReactiveEffect._trackId
- */
+
 export type Dep = Map<ReactiveEffect, number> & {
   cleanup: () => void
   computed?: ComputedRefImpl<any>

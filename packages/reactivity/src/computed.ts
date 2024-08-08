@@ -34,6 +34,7 @@ export class ComputedRefImpl<T> {
   public readonly __v_isRef = true
   public readonly [ReactiveFlags.IS_READONLY]: boolean = false
 
+  //SSR决定
   public _cacheable: boolean
 
   constructor(
@@ -52,12 +53,16 @@ export class ComputedRefImpl<T> {
     this[ReactiveFlags.IS_READONLY] = isReadonly
   }
 
+  //从这段看
   get value() {
     // the computed ref may get wrapped by other proxies e.g. readonly() #3376
     const self = toRaw(this)
+    //不能缓存或者数据脏了
     if (!self._cacheable || self.effect.dirty) {
       
+      //比较旧值和新值
       if (hasChanged(self._value, (self._value = self.effect.run()!))) {
+        //触发所有依赖
         triggerRefValue(self, DirtyLevels.Dirty)
       }
     }

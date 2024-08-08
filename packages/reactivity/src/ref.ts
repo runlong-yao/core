@@ -50,7 +50,12 @@ export function trackRefValue(ref: RefBase<any>) {
     trackEffect(
       activeEffect,
       ref.dep ||
+      // Dep = Map<ReactiveEffect, number> & {
+      //   cleanup: () => void
+      //   computed?: ComputedRefImpl<any>
+      // }
         (ref.dep = createDep(
+
           () => (ref.dep = undefined),
           ref instanceof ComputedRefImpl ? ref : undefined,
         )),
@@ -387,6 +392,11 @@ class ObjectRefImpl<T extends object, K extends keyof T> {
   }
 }
 
+
+
+
+
+//()=>{}返回一个readonly类型
 class GetterRefImpl<T> {
   public readonly __v_isRef = true
   public readonly __v_isReadonly = true
