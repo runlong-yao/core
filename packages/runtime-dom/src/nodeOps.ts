@@ -66,13 +66,18 @@ export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
     // #5308 can only take cached path if:
     // - has a single root node
     // - nextSibling info is still available
+    //n2.el && (n2.el === n2.archor || n2.el.nextSibling)
     if (start && (start === end || start.nextSibling)) {
+      //沿用老的节点
       // cached
       while (true) {
+        //网parent里差节点
         parent.insertBefore(start!.cloneNode(true), anchor)
+        //到尾部(end)了或者start.nextSibling到头了
         if (start === end || !(start = start!.nextSibling)) break
       }
     } else {
+      //插入新的节点
       // fresh insert
       templateContainer.innerHTML =
         namespace === 'svg'

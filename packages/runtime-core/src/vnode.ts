@@ -316,6 +316,7 @@ export function createElementBlock(
   children?: any,
   patchFlag?: number,
   dynamicProps?: string[],
+  //元素本身类型
   shapeFlag?: number,
 ) {
   return setupBlock(
@@ -361,6 +362,12 @@ export function isVNode(value: any): value is VNode {
   return value ? value.__v_isVNode === true : false
 }
 
+/**
+ * 节点类型和key判断是否为同一个节点
+ * @param n1
+ * @param n2
+ * @returns
+ */
 export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
   if (
     __DEV__ &&
@@ -374,6 +381,7 @@ export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
     // HMR only: if the component has been hot-updated, force a reload.
     return false
   }
+
   return n1.type === n2.type && n1.key === n2.key
 }
 
@@ -429,6 +437,7 @@ const normalizeRef = ({
 function createBaseVNode(
   type: VNodeTypes | ClassComponent | typeof NULL_DYNAMIC_COMPONENT,
   props: (Data & VNodeProps) | null = null,
+  //vnode或者vnode数组
   children: unknown = null,
   patchFlag = 0,
   dynamicProps: string[] | null = null,
@@ -551,11 +560,13 @@ function _createVNode(
     return cloned
   }
 
+  //用Class定义的组件
   // class component normalization.
   if (isClassComponent(type)) {
     type = type.__vccOpts
   }
 
+  //vue2.0
   // 2.x async/functional component compat
   if (__COMPAT__) {
     type = convertLegacyComponent(type, currentRenderingInstance)
@@ -564,8 +575,10 @@ function _createVNode(
   // class & style normalization.
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.
+    //proxy或reactive的属性被克隆，使他们能够被修改
     props = guardReactiveProps(props)!
     let { class: klass, style } = props
+    //对象形式的class转为字符串
     if (klass && !isString(klass)) {
       props.class = normalizeClass(klass)
     }
@@ -575,6 +588,8 @@ function _createVNode(
       if (isProxy(style) && !isArray(style)) {
         style = extend({}, style)
       }
+
+      //返回string或者object
       props.style = normalizeStyle(style)
     }
   }
@@ -603,6 +618,8 @@ function _createVNode(
       type,
     )
   }
+
+  //normalize参数
 
   return createBaseVNode(
     type,
@@ -771,7 +788,30 @@ export function cloneIfMounted(child: VNode): VNode {
     : cloneVNode(child)
 }
 
+/**
+ * render(){
+ *    return h("div", {
+ *     default:()=> {
+ *       return h(Profile)
+ *     }
+ * })
+ * }
+ */
+
+/**
+ *
+ * @param vnode
+ * @param children
+ * @returns
+ */
+
 export function normalizeChildren(vnode: VNode, children: unknown) {
+  //一个组件下会有很多vnode节点
+  //vnode当前节点
+  //vnode shapeFlag会记录节点的类型
+  //children当前节点的children
+
+  //设置slotflag目的，为了patch阶段进行优化
   let type = 0
   const { shapeFlag } = vnode
   if (children == null) {
@@ -779,20 +819,28 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
   } else if (isArray(children)) {
     type = ShapeFlags.ARRAY_CHILDREN
   } else if (typeof children === 'object') {
+    //普通元素和Teleport元素处理
     if (shapeFlag & (ShapeFlags.ELEMENT | ShapeFlags.TELEPORT)) {
       // Normalize slot to plain children for plain element and Teleport
       const slot = (children as any).default
       if (slot) {
+        //_c代表，slot是通过template编译转换后产生的
+        //_d代表slot是否在被处理,_d=true代表插槽处理完了
         // _c marker is added by withCtx() indicating this is a compiled slot
         slot._c && (slot._d = false)
+        //执行了vnode,
         normalizeChildren(vnode, slot())
         slot._c && (slot._d = true)
       }
       return
     } else {
+      //
       type = ShapeFlags.SLOTS_CHILDREN
+
+      //[TODP]分析对应的不同h(传参类型)
       const slotFlag = (children as RawSlots)._
       if (!slotFlag && !(InternalObjectKey in children!)) {
+        //没有经过compiled或者normalized的插槽
         // if slots are not normalized, attach context instance
         // (compiled / normalized slots already have context)
         ;(children as RawSlots)._ctx = currentRenderingInstance

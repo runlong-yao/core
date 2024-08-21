@@ -238,6 +238,10 @@ export function shallowReadonly<T extends object>(target: T): Readonly<T> {
   )
 }
 
+//ReactiveEffect
+//Proxy
+//computed
+
 function createReactiveObject(
   target: Target,
   isReadonly: boolean,
@@ -296,7 +300,6 @@ function createReactiveObject(
  * @see {@link https://vuejs.org/api/reactivity-utilities.html#isreactive}
  */
 export function isReactive(value: unknown): boolean {
-  
   if (isReadonly(value)) {
     //【为啥如此】
     return isReactive((value as Target)[ReactiveFlags.RAW])

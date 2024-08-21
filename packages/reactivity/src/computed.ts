@@ -24,8 +24,17 @@ export interface WritableComputedOptions<T> {
   set: ComputedSetter<T>
 }
 
+//computed内的响应式发生变化后，更新value值
+
+//computed(()=>)
+
+//类结构
+// ComputedRefImpl.effect(ReactiveEffect)
+// ReactiveEffect.trigger
+// ReactiveEffect.fn
 
 export class ComputedRefImpl<T> {
+  //依赖于当前computed的Effect
   public dep?: Dep = undefined
 
   private _value!: T
@@ -53,13 +62,12 @@ export class ComputedRefImpl<T> {
     this[ReactiveFlags.IS_READONLY] = isReadonly
   }
 
-  //从这段看
   get value() {
     // the computed ref may get wrapped by other proxies e.g. readonly() #3376
     const self = toRaw(this)
-    //不能缓存或者数据脏了
+    //ssr不进行缓存
+    //数据脏了
     if (!self._cacheable || self.effect.dirty) {
-      
       //比较旧值和新值
       if (hasChanged(self._value, (self._value = self.effect.run()!))) {
         //触发所有依赖
@@ -157,5 +165,6 @@ export function computed<T>(
     cRef.effect.onTrigger = debugOptions.onTrigger
   }
 
+  //ComputedRefImpl对象
   return cRef as any
 }

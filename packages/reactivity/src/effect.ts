@@ -31,14 +31,16 @@ export let activeEffect: ReactiveEffect | undefined
 //self依赖的对象: parent
 
 /**
- * 响应式副作用
+ * 副作用管理类
  */
+//computed 返回的是一个ref对象;computed收集的是fn中的依赖;会影响其它引用computed的监听方法
+//watch 返回一个stop方法;watch收集的是第一个参数传递的依赖;执行第二参数的方法
 
 export class ReactiveEffect<T = any> {
   active = true
 
   /**
-   * 依赖的响应式对象集合
+   * 当前effect依赖的响应式对象集合
    */
   deps: Dep[] = []
 
@@ -63,7 +65,8 @@ export class ReactiveEffect<T = any> {
    */
   _dirtyLevel = DirtyLevels.Dirty
 
-  //和跟踪相关
+  //cleanup的时候_trackId会增加，
+  //应该是用来标记清楚的，防止effect运行无效代码
   /**
    * @internal
    */
@@ -81,18 +84,19 @@ export class ReactiveEffect<T = any> {
    */
   _depsLength = 0
 
-//建立effectScope的对象:self
-//依赖于self的对象: child
-//self依赖的对象: parent
+  //建立effectScope的对象:self
+  //依赖于self的对象: child
+  //self依赖的对象: parent
 
   /**
-   * 
-   * @param fn 
+   *
+   * @param fn
    * @param trigger 当self发生改变时需要运行trigger,来触发child的重新计算
-   * @param scheduler 
-   * @param scope 
+   * @param scheduler
+   * @param scope
    */
   constructor(
+    //ref值的计算方法
     public fn: () => T,
     public trigger: () => void,
     public scheduler?: EffectScheduler,
@@ -105,7 +109,7 @@ export class ReactiveEffect<T = any> {
   public get dirty() {
     if (this._dirtyLevel === DirtyLevels.MaybeDirty) {
       pauseTracking()
-          //逐个调用依赖，检查自身是否为脏数据
+      //逐个调用依赖，检查自身是否为脏数据
       for (let i = 0; i < this._depsLength; i++) {
         const dep = this.deps[i]
         if (dep.computed) {
@@ -132,7 +136,7 @@ export class ReactiveEffect<T = any> {
 
   /**
    * 返回计算值并(重新)收集依赖
-   * @returns 
+   * @returns
    */
   run() {
     this._dirtyLevel = DirtyLevels.NotDirty
@@ -182,7 +186,6 @@ function preCleanupEffect(effect: ReactiveEffect) {
 //逻辑上会保留effect.deps，[猜测]是为了避免多余的dep存effect,effect存dep的操作
 
 function postCleanupEffect(effect: ReactiveEffect) {
-  
   if (effect.deps && effect.deps.length > effect._depsLength) {
     for (let i = effect._depsLength; i < effect.deps.length; i++) {
       cleanupDepEffect(effect.deps[i], effect)
@@ -193,8 +196,8 @@ function postCleanupEffect(effect: ReactiveEffect) {
 
 /**
  * 清除RefBase中dep存储的effect
- * @param dep 
- * @param effect 
+ * @param dep
+ * @param effect
  */
 
 function cleanupDepEffect(dep: Dep, effect: ReactiveEffect) {
@@ -310,10 +313,12 @@ export function resetScheduling() {
 }
 
 /**
- * 跟踪副作用
- * @param effect 
- * @param dep 
- * @param debuggerEventExtraInfo 
+ * ref.dep和effect(一般是activeEffect)建立联系
+ * ref.dep收集调用ref.value的effect(换句话说就是被哪些effect依赖)
+ * effect.deps记录了依赖于哪些ref.dep
+ * @param effect
+ * @param dep
+ * @param debuggerEventExtraInfo
  */
 export function trackEffect(
   effect: ReactiveEffect,
@@ -324,27 +329,21 @@ export function trackEffect(
   dep: Dep,
   debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
-  
   if (dep.get(effect) !== effect._trackId) {
-    
-    //effect加入到
-    //执行watch的时候会生成一个effect, 也在这个时间点通过执行getter方法完成了track
-    //所谓track是把ReactiveEffect加入到ref的dep里
-    //把ref的dep存入ReactiveEffect.deps里
-    //dep中存入了reactive
+    //将effect加入到dep中
     dep.set(effect, effect._trackId)
-    //一般情况下oldDep应该是undefined，相当于一个新的位置
     const oldDep = effect.deps[effect._depsLength]
 
+    //防止已经添加
     if (oldDep !== dep) {
+      //清除oldDep
       if (oldDep) {
         cleanupDepEffect(oldDep, effect)
       }
-      //effect中保存了和ref相关的dep
+      //设置新的dep,并且depsLength++
       effect.deps[effect._depsLength++] = dep
     } else {
-      //[为啥]会存在oldDep和dep相同的状况
-      //猜测是某些特殊情况，造成depsLength没有自动增长
+      //已经添加但是depsLength未增长++
       effect._depsLength++
     }
     if (__DEV__) {
@@ -363,11 +362,15 @@ export function triggerEffects(
   pauseScheduling()
   for (const effect of dep.keys()) {
     if (
+      //[问]是否代表如果effect已经被设置为Dirty就不需要trigger了
       effect._dirtyLevel < dirtyLevel &&
+      //检测是否清楚
       dep.get(effect) === effect._trackId
     ) {
+      //只可能两种dirty状态NotDirty和MaybeDirty
       const lastDirtyLevel = effect._dirtyLevel
       effect._dirtyLevel = dirtyLevel
+      //只有在NotDirty状态喜爱才会去执行trigger
       if (lastDirtyLevel === DirtyLevels.NotDirty) {
         effect._shouldSchedule = true
         if (__DEV__) {

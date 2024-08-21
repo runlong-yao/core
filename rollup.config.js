@@ -9,7 +9,7 @@ import pico from 'picocolors'
 import commonJS from '@rollup/plugin-commonjs'
 import polyfillNode from 'rollup-plugin-polyfill-node'
 import { nodeResolve } from '@rollup/plugin-node-resolve'
-import terser from '@rollup/plugin-terser'
+// import terser from '@rollup/plugin-terser'
 import esbuild from 'rollup-plugin-esbuild'
 import alias from '@rollup/plugin-alias'
 import { entries } from './scripts/aliases.js'
@@ -48,10 +48,12 @@ const outputConfigs = {
   'esm-bundler': {
     file: resolve(`dist/${name}.esm-bundler.js`),
     format: 'es',
+    sourcemap: true,
   },
   'esm-browser': {
     file: resolve(`dist/${name}.esm-browser.js`),
     format: 'es',
+    sourcemap: true,
   },
   cjs: {
     file: resolve(`dist/${name}.cjs.js`),
@@ -65,14 +67,17 @@ const outputConfigs = {
   'esm-bundler-runtime': {
     file: resolve(`dist/${name}.runtime.esm-bundler.js`),
     format: 'es',
+    sourcemap: true,
   },
   'esm-browser-runtime': {
     file: resolve(`dist/${name}.runtime.esm-browser.js`),
     format: 'es',
+    sourcemap: true,
   },
   'global-runtime': {
     file: resolve(`dist/${name}.runtime.global.js`),
     format: 'iife',
+    sourcemap: true,
   },
 }
 
@@ -362,14 +367,14 @@ function createMinifiedConfig(/** @type {PackageFormat} */ format) {
       format: outputConfigs[format].format,
     },
     [
-      terser({
-        module: /^esm/.test(format),
-        compress: {
-          ecma: 2015,
-          pure_getters: true,
-        },
-        safari10: true,
-      }),
+      // terser({
+      //   module: /^esm/.test(format),
+      //   compress: {
+      //     ecma: 2015,
+      //     pure_getters: true,
+      //   },
+      //   safari10: true,
+      // }),
     ],
   )
 }

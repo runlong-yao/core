@@ -206,6 +206,7 @@ export function createAppAPI<HostElement>(
       rootProps = null
     }
 
+    //构建context对象
     const context = createAppContext()
     const installedPlugins = new WeakSet()
 
@@ -310,6 +311,7 @@ export function createAppAPI<HostElement>(
                 ` you need to unmount the previous app by calling \`app.unmount()\` first.`,
             )
           }
+          //生成一个node,chilren=null
           const vnode = createVNode(rootComponent, rootProps)
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
@@ -338,6 +340,7 @@ export function createAppAPI<HostElement>(
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
             render(vnode, rootContainer, namespace)
+            //--> renderer.ts render实现
           }
           isMounted = true
           app._container = rootContainer

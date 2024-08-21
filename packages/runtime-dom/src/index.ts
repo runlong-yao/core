@@ -54,7 +54,6 @@ function ensureHydrationRenderer() {
   enabledHydration = true
   return renderer as HydrationRenderer
 }
-
 // use explicit type casts here to avoid import() calls in rolled-up d.ts
 export const render = ((...args) => {
   ensureRenderer().render(...args)

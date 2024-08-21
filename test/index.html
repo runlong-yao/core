@@ -1,0 +1,30 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <div id="app">
+
+    </div>
+</body>
+
+<script type="module">
+import { createApp,h,ref } from "../packages/vue/dist/vue.esm-browser.prod.js";
+//调试到8154
+createApp({
+    setup(){
+        const text = ref("Hello World")
+        return {
+            text
+        }
+    },
+    render(){
+        console.log('createApp render');
+        
+        return h("h1", {},this.text);
+    }
+}).mount("#app");
+</script>
+</html>

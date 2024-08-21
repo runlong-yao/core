@@ -73,7 +73,6 @@ import { isAsyncWrapper } from './apiAsyncComponent'
 import { isCompatEnabled } from './compat/compatConfig'
 import { DeprecationTypes } from './compat/compatConfig'
 import type { TransitionHooks } from './components/BaseTransition'
-
 export interface Renderer<HostElement = RendererElement> {
   render: RootRenderFunction<HostElement>
   createApp: CreateAppFunction<HostElement>
@@ -350,6 +349,7 @@ function baseCreateRenderer(
     setText: hostSetText,
     setElementText: hostSetElementText,
     parentNode: hostParentNode,
+    // nextSibling: node => node.nextSibling,
     nextSibling: hostNextSibling,
     setScopeId: hostSetScopeId = NOOP,
     insertStaticContent: hostInsertStaticContent,
@@ -358,7 +358,9 @@ function baseCreateRenderer(
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
   const patch: PatchFn = (
+    //old
     n1,
+    //maybe new
     n2,
     container,
     anchor = null,
@@ -372,13 +374,15 @@ function baseCreateRenderer(
       return
     }
 
-    // patching & not same type, unmount old tree
+    //patching & not same type, unmount old tree
+    //n1和n2不同类型
     if (n1 && !isSameVNodeType(n1, n2)) {
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
       n1 = null
     }
 
+    //放弃优化
     if (n2.patchFlag === PatchFlags.BAIL) {
       optimized = false
       n2.dynamicChildren = null
@@ -394,6 +398,7 @@ function baseCreateRenderer(
         break
       case Static:
         if (n1 == null) {
+          //n1 挂载
           mountStaticNode(n2, container, anchor, namespace)
         } else if (__DEV__) {
           patchStaticNode(n1, n2, container, namespace)
@@ -482,6 +487,7 @@ function baseCreateRenderer(
         anchor,
       )
     } else {
+      //保留原先的dom
       const el = (n2.el = n1.el!)
       if (n2.children !== n1.children) {
         hostSetText(el, n2.children as string)
@@ -510,12 +516,15 @@ function baseCreateRenderer(
   const mountStaticNode = (
     n2: VNode,
     container: RendererElement,
+    //n1.anchor
     anchor: RendererNode | null,
     namespace: ElementNamespace,
   ) => {
+    // 仅在与 compiler-dom 或 runtime-dom 一起使用时才会出现。这是因为静态节点的优化和处理是由这些特定的编译器和运行时库负责的。
     // static nodes are only present when used with compiler-dom/runtime-dom
     // which guarantees presence of hostInsertStaticContent.
     ;[n2.el, n2.anchor] = hostInsertStaticContent!(
+      //n2的内容
       n2.children as string,
       container,
       anchor,
@@ -2349,7 +2358,9 @@ function baseCreateRenderer(
     if (__FEATURE_SUSPENSE__ && vnode.shapeFlag & ShapeFlags.SUSPENSE) {
       return vnode.suspense!.next()
     }
-    return hostNextSibling((vnode.anchor || vnode.el)!)
+    //vnode.el通常指向虚拟节点对应的实际 DOM 元素
+    //通常用于指向某个特定位置的 DOM 元素，特别是在处理一些复杂的场景时，比如片段（Fragment）或异步组件（Suspense）等。它可以用作占位符或标记，以便在渲染过程中插入或替换内容。
+    return hostNextSibling((vnode.anchor || vnode.el)!) //<=> (anchor || el).nextSibling
   }
 
   let isFlushing = false
@@ -2359,6 +2370,7 @@ function baseCreateRenderer(
         unmount(container._vnode, null, null, true)
       }
     } else {
+      //createApp时调用
       patch(
         container._vnode || null,
         vnode,
