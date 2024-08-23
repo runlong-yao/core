@@ -12,19 +12,30 @@
 
 <script type="module">
 import { createApp,h,ref } from "../packages/vue/dist/vue.esm-browser.prod.js";
-//调试到8154
+
 createApp({
     setup(){
-        const text = ref("Hello World")
+        const count = ref(0)
+
+        function inc() {
+            count.value++;
+        }
+
         return {
-            text
+            count,
+            inc
         }
     },
     render(){
-        console.log('createApp render');
-        
-        return h("h1", {},this.text);
+        //vNode
+        return [h("h1", {},this.count),
+            h("button", {
+                onclick: this.inc
+            }, "inc")
+        ];
     }
 }).mount("#app");
+
+//mount
 </script>
 </html>

@@ -355,6 +355,19 @@ function baseCreateRenderer(
     insertStaticContent: hostInsertStaticContent,
   } = options
 
+  /**
+   * patch作用是比较n1和n2的差异，然后将差异应用到el对应的dom上
+   * @param n1
+   * @param n2
+   * @param container
+   * @param anchor
+   * @param parentComponent
+   * @param parentSuspense
+   * @param namespace
+   * @param slotScopeIds
+   * @param optimized
+   * @returns
+   */
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
   const patch: PatchFn = (
@@ -1384,6 +1397,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `render`)
           }
+          //VNode
           const subTree = (instance.subTree = renderComponentRoot(instance))
           if (__DEV__) {
             endMeasure(instance, `render`)
@@ -2364,6 +2378,12 @@ function baseCreateRenderer(
   }
 
   let isFlushing = false
+  /**
+   * 将vnode渲染到container中
+   * @param vnode
+   * @param container
+   * @param namespace
+   */
   const render: RootRenderFunction = (vnode, container, namespace) => {
     if (vnode == null) {
       if (container._vnode) {
@@ -2371,6 +2391,7 @@ function baseCreateRenderer(
       }
     } else {
       //createApp时调用
+      //container._vnode不会是VNode数组，因为多个是多跟会被包裹在Fragment类型的VNode中中
       patch(
         container._vnode || null,
         vnode,

@@ -75,6 +75,14 @@ export function callWithErrorHandling(
   return res
 }
 
+/**
+ *
+ * @param fn
+ * @param instance
+ * @param type
+ * @param args
+ * @returns
+ */
 export function callWithAsyncErrorHandling(
   fn: Function | Function[],
   instance: ComponentInternalInstance | null,

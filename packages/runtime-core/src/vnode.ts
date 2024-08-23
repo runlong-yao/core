@@ -905,6 +905,7 @@ export function mergeProps(...args: (Data & VNodeProps)[]) {
   return ret
 }
 
+// invokeVNodeHook(vnodeHook, parent, initialVNode)
 export function invokeVNodeHook(
   hook: VNodeHook,
   instance: ComponentInternalInstance | null,

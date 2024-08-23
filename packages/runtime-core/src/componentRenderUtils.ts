@@ -40,6 +40,11 @@ export function markAttrsAccessed() {
 
 type SetRootFn = ((root: VNode) => void) | undefined
 
+/**
+ * 执行instance上的render方法，返回VNode
+ * @param instance
+ * @returns
+ */
 export function renderComponentRoot(
   instance: ComponentInternalInstance,
 ): VNode {
@@ -70,6 +75,8 @@ export function renderComponentRoot(
 
   try {
     if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+      //组件
+
       // withProxy is a proxy with a different `has` trap only for
       // runtime-compiled render functions using `with` block.
       const proxyToUse = withProxy || proxy
@@ -101,6 +108,7 @@ export function renderComponentRoot(
       )
       fallthroughAttrs = attrs
     } else {
+      //方法组件
       // functional
       const render = Component as FunctionalComponent
       // in dev, mark attrs accessed if optional props (attrs === props)

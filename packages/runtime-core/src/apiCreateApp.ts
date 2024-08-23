@@ -328,6 +328,7 @@ export function createAppAPI<HostElement>(
             context.reload = () => {
               // casting to ElementNamespace because TS doesn't guarantee type narrowing
               // over function boundaries
+              //重新调用render，比如文件中删除了一个组件，会通过server调用reload方法
               render(
                 cloneVNode(vnode),
                 rootContainer,

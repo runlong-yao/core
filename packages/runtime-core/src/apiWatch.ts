@@ -381,6 +381,7 @@ function doWatch(
   // important: mark the job as a watcher callback so that scheduler knows
   // it is allowed to self-trigger (#1727)
   job.allowRecurse = !!cb
+  //watchEffect是运行递归的，普通的watch不允许递归
 
   let scheduler: EffectScheduler
   if (flush === 'sync') {

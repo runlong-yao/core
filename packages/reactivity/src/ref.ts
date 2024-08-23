@@ -50,12 +50,11 @@ export function trackRefValue(ref: RefBase<any>) {
     trackEffect(
       activeEffect,
       ref.dep ||
-      // Dep = Map<ReactiveEffect, number> & {
-      //   cleanup: () => void
-      //   computed?: ComputedRefImpl<any>
-      // }
+        // Dep = Map<ReactiveEffect, number> & {
+        //   cleanup: () => void
+        //   computed?: ComputedRefImpl<any>
+        // }
         (ref.dep = createDep(
-
           () => (ref.dep = undefined),
           ref instanceof ComputedRefImpl ? ref : undefined,
         )),
@@ -72,9 +71,9 @@ export function trackRefValue(ref: RefBase<any>) {
 
 /**
  * 触发Ref下deps的更新
- * @param ref 
- * @param dirtyLevel 
- * @param newVal 
+ * @param ref
+ * @param dirtyLevel
+ * @param newVal
  */
 export function triggerRefValue(
   ref: RefBase<any>,
@@ -270,6 +269,7 @@ export function toValue<T>(source: MaybeRefOrGetter<T> | ComputedRef<T>): T {
 }
 
 const shallowUnwrapHandlers: ProxyHandler<any> = {
+  //unref,最后template中不用写.value
   get: (target, key, receiver) => unref(Reflect.get(target, key, receiver)),
   set: (target, key, value, receiver) => {
     const oldValue = target[key]
@@ -391,10 +391,6 @@ class ObjectRefImpl<T extends object, K extends keyof T> {
     return getDepFromReactive(toRaw(this._object), this._key)
   }
 }
-
-
-
-
 
 //()=>{}返回一个readonly类型
 class GetterRefImpl<T> {

@@ -313,6 +313,7 @@ export function resetScheduling() {
 }
 
 /**
+ * [问]什么时候会产生存在effect，但是_trackId不同呢
  * ref.dep和effect(一般是activeEffect)建立联系
  * ref.dep收集调用ref.value的effect(换句话说就是被哪些effect依赖)
  * effect.deps记录了依赖于哪些ref.dep
@@ -389,7 +390,9 @@ export function scheduleEffects(dep: Dep) {
     if (
       effect.scheduler &&
       effect._shouldSchedule &&
-      (!effect._runnings || effect.allowRecurse) &&
+      (!effect._runnings ||
+        //允许递归
+        effect.allowRecurse) &&
       dep.get(effect) === effect._trackId
     ) {
       effect._shouldSchedule = false
