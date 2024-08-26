@@ -1,0 +1,76 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <div id="app">
+
+    </div>
+</body>
+
+<script type="module">
+import { createApp,h,ref,defineComponent,reactive } from "../packages/vue/dist/vue.esm-browser.prod.js";
+//内部的count只会重新渲染内部组件
+const Comp =  defineComponent({
+    setup(){
+        const count = ref(1)
+        function inc() {
+            count.value++
+        }
+        return {count,inc}
+    },
+    render(){
+        return [
+            h("h1", `value:${this.count}`),
+            h("h1", `${Date.now()}`),
+            h("button", {
+                onclick: this.inc
+            }, "inc"),
+        ];
+    }
+})
+createApp({
+    setup(){
+        const count = ref(0)
+        const title = ref("这是标题")
+
+        // const data = reactive({
+        //     title:"这是标题",
+        //     count:0
+        // })
+
+        function inc() {
+            count.value++
+        }
+        function titleInc() {
+            title.value = title.value + 1
+        }
+
+        return {
+            count,
+            title,
+            inc,
+            titleInc
+        }
+    },
+    render(){
+        console.log('app render');
+        
+        //vNode
+        return [
+            h("h1",this.title),
+            h(Comp, {data: this.count}),
+
+            h("button", {
+                onclick: this.titleInc
+            }, "titleInc"),
+            h("h1", `value:${Date.now()}`),
+        ];
+    }
+}).mount("#app");
+
+//mount
+</script>
+</html>

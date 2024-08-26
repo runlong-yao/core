@@ -526,6 +526,7 @@ const emptyAppContext = createAppContext()
 let uid = 0
 
 export function createComponentInstance(
+  //组件对应的vnode
   vnode: VNode,
   parent: ComponentInternalInstance | null,
   suspense: SuspenseBoundary | null,

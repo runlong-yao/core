@@ -359,6 +359,9 @@ const isElementRoot = (vnode: VNode) => {
   )
 }
 
+//性能优化，对于过于庞大的渲染，可以用组件来避免重复渲染，在渲染前会对组件进行prop的比较
+//shouldUpdateComponent => hasPropsChanged => false
+
 export function shouldUpdateComponent(
   prevVNode: VNode,
   nextVNode: VNode,

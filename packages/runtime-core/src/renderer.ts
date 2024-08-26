@@ -1224,6 +1224,7 @@ function baseCreateRenderer(
     // mounting
     const compatMountInstance =
       __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
+    //instance = ComponentIntertnalInstance
     const instance: ComponentInternalInstance =
       compatMountInstance ||
       (initialVNode.component = createComponentInstance(
@@ -1397,7 +1398,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `render`)
           }
-          //VNode
+          //componentInstance => VNode
           const subTree = (instance.subTree = renderComponentRoot(instance))
           if (__DEV__) {
             endMeasure(instance, `render`)
@@ -1474,7 +1475,6 @@ function baseCreateRenderer(
         initialVNode = container = anchor = null as any
       } else {
         let { next, bu, u, parent, vnode } = instance
-
         if (__FEATURE_SUSPENSE__) {
           const nonHydratedAsyncRoot = locateNonHydratedAsyncRoot(instance)
           // we are trying to update some async comp before hydration
