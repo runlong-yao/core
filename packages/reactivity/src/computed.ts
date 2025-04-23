@@ -24,14 +24,25 @@ export interface WritableComputedOptions<T> {
   set: ComputedSetter<T>
 }
 
-//computed内的响应式发生变化后，更新value值
 
-//computed(()=>)
+//const a = ref()
 
-//类结构
-// ComputedRefImpl.effect(ReactiveEffect)
-// ReactiveEffect.trigger
-// ReactiveEffect.fn
+//const b = computed(() => {
+// return a.value
+//})
+
+//const c = computed({
+  //set(v){
+  // a.value = v
+  //}
+  //get(){
+  // return a.value
+  //}
+//})
+
+
+
+//c
 
 export class ComputedRefImpl<T> {
   //依赖于当前computed的Effect
@@ -43,7 +54,6 @@ export class ComputedRefImpl<T> {
   public readonly __v_isRef = true
   public readonly [ReactiveFlags.IS_READONLY]: boolean = false
 
-  //SSR决定
   public _cacheable: boolean
 
   constructor(
@@ -52,6 +62,7 @@ export class ComputedRefImpl<T> {
     isReadonly: boolean,
     isSSR: boolean,
   ) {
+    
     this.effect = new ReactiveEffect(
       () => getter(this._value),
       () => triggerRefValue(this, DirtyLevels.MaybeDirty),

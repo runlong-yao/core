@@ -364,7 +364,7 @@ export function isProxy(value: unknown): boolean {
  */
 export function toRaw<T>(observed: T): T {
   const raw = observed && (observed as Target)[ReactiveFlags.RAW]
-  //获取内嵌的原始对象
+  //获取最内层不带ReactiveFlags.RAW的值
   return raw ? toRaw(raw) : observed
 }
 

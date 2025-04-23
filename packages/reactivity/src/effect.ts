@@ -102,7 +102,6 @@ export class ReactiveEffect<T = any> {
     public scheduler?: EffectScheduler,
     scope?: EffectScope,
   ) {
-    //scope和effect关联
     recordEffectScope(this, scope)
   }
 
@@ -131,6 +130,7 @@ export class ReactiveEffect<T = any> {
   }
 
   public set dirty(v) {
+    //effect的dirtyLevel只有脏和不脏两种？
     this._dirtyLevel = v ? DirtyLevels.Dirty : DirtyLevels.NotDirty
   }
 
@@ -321,6 +321,8 @@ export function resetScheduling() {
  * @param dep
  * @param debuggerEventExtraInfo
  */
+//在ref的dep中记录调用方的effect
+//在effect的deps中记录ref的dep
 export function trackEffect(
   effect: ReactiveEffect,
   // Dep = Map<ReactiveEffect, number> & {
@@ -330,9 +332,11 @@ export function trackEffect(
   dep: Dep,
   debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
+  //不存在effect时
   if (dep.get(effect) !== effect._trackId) {
-    //将effect加入到dep中
+    
     dep.set(effect, effect._trackId)
+   
     const oldDep = effect.deps[effect._depsLength]
 
     //防止已经添加
@@ -341,10 +345,10 @@ export function trackEffect(
       if (oldDep) {
         cleanupDepEffect(oldDep, effect)
       }
-      //设置新的dep,并且depsLength++
+  
       effect.deps[effect._depsLength++] = dep
     } else {
-      //已经添加但是depsLength未增长++
+      //已经加过了
       effect._depsLength++
     }
     if (__DEV__) {
@@ -355,28 +359,40 @@ export function trackEffect(
 
 const queueEffectSchedulers: EffectScheduler[] = []
 
+/**
+ * const a = ref()
+ * const b = computed(() => a.value)
+ * 
+ * a.value = 1 
+ * set value of ref
+ * trigger ref.dep effects(set dirty & do effect.trigger )
+ *     
+ */
+
 export function triggerEffects(
   dep: Dep,
   dirtyLevel: DirtyLevels,
   debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
   pauseScheduling()
+  //dep中存储的是依赖于dep所在ref的effect
   for (const effect of dep.keys()) {
     if (
-      //[问]是否代表如果effect已经被设置为Dirty就不需要trigger了
       effect._dirtyLevel < dirtyLevel &&
-      //检测是否清楚
       dep.get(effect) === effect._trackId
     ) {
-      //只可能两种dirty状态NotDirty和MaybeDirty
+      //记录原始状态，用于后续处理判断
       const lastDirtyLevel = effect._dirtyLevel
+      //为所有依赖于dep的effect设置dirtyLevel
       effect._dirtyLevel = dirtyLevel
-      //只有在NotDirty状态喜爱才会去执行trigger
+
+      //从原本不脏转变过来的，需要在下一个tick执行
       if (lastDirtyLevel === DirtyLevels.NotDirty) {
         effect._shouldSchedule = true
         if (__DEV__) {
           effect.onTrigger?.(extend({ effect }, debuggerEventExtraInfo))
         }
+        //只会出触发computed的trigger
         effect.trigger()
       }
     }
@@ -385,9 +401,14 @@ export function triggerEffects(
   resetScheduling()
 }
 
+
+
 export function scheduleEffects(dep: Dep) {
+  //执行了所有有scheduler的effect，比如watch。computed是没有的
+  //可以认为这部分主要处理的就是watch之类的
   for (const effect of dep.keys()) {
     if (
+      
       effect.scheduler &&
       effect._shouldSchedule &&
       (!effect._runnings ||
