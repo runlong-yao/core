@@ -16,6 +16,7 @@ import {
 // raw Maps to reduce memory overhead.
 type KeyToDepMap = Map<any, Dep>
 const targetMap = new WeakMap<object, KeyToDepMap>()
+//targetMap target -> key -> dep
 
 export const ITERATE_KEY = Symbol(__DEV__ ? 'iterate' : '')
 export const MAP_KEY_ITERATE_KEY = Symbol(__DEV__ ? 'Map key iterate' : '')
@@ -70,18 +71,21 @@ export function trigger(
   oldValue?: unknown,
   oldTarget?: Map<unknown, unknown> | Set<unknown>,
 ) {
+  //key -> Dep
   const depsMap = targetMap.get(target)
   if (!depsMap) {
     // never been tracked
     return
   }
 
+  //计算受影响的deps
   let deps: (Dep | undefined)[] = []
   if (type === TriggerOpTypes.CLEAR) {
     // collection being cleared
     // trigger all effects for target
     deps = [...depsMap.values()]
   } else if (key === 'length' && isArray(target)) {
+    //修改数组的length
     const newLength = Number(newValue)
     depsMap.forEach((dep, key) => {
       if (key === 'length' || (!isSymbol(key) && key >= newLength)) {
@@ -98,8 +102,10 @@ export function trigger(
     switch (type) {
       case TriggerOpTypes.ADD:
         if (!isArray(target)) {
+          //迭代比哦记
           deps.push(depsMap.get(ITERATE_KEY))
           if (isMap(target)) {
+            //Map迭代标价？
             deps.push(depsMap.get(MAP_KEY_ITERATE_KEY))
           }
         } else if (isIntegerKey(key)) {
@@ -117,6 +123,7 @@ export function trigger(
         break
       case TriggerOpTypes.SET:
         if (isMap(target)) {
+          //迭代标记
           deps.push(depsMap.get(ITERATE_KEY))
         }
         break
@@ -124,6 +131,9 @@ export function trigger(
   }
 
   pauseScheduling()
+
+
+  //触发相关副作用
   for (const dep of deps) {
     if (dep) {
       triggerEffects(
@@ -142,6 +152,7 @@ export function trigger(
       )
     }
   }
+
   resetScheduling()
 }
 

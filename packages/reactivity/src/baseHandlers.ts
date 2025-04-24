@@ -181,10 +181,12 @@ class MutableReactiveHandler extends BaseReactiveHandler {
         oldValue = toRaw(oldValue)
         value = toRaw(value)
       }
+      //如果原始的至是个ref，直接设置这个ref值
       if (!isArray(target) && isRef(oldValue) && !isRef(value)) {
         if (isOldValueReadonly) {
           return false
         } else {
+          //对ref进行了设置
           oldValue.value = value
           return true
         }
@@ -193,16 +195,22 @@ class MutableReactiveHandler extends BaseReactiveHandler {
       // in shallow mode, objects are set as-is regardless of reactive or not
     }
 
+    //检查是不是数组键值
     const hadKey =
       isArray(target) && isIntegerKey(key)
         ? Number(key) < target.length
         : hasOwn(target, key)
     const result = Reflect.set(target, key, value, receiver)
     // don't trigger if target is something up in the prototype chain of original
+
+    // 保证不是原型链对象
+    //Object.create(reactive({a:1}))
     if (target === toRaw(receiver)) {
+      //数组或对象Key是否存在
       if (!hadKey) {
         trigger(target, TriggerOpTypes.ADD, key, value)
       } else if (hasChanged(value, oldValue)) {
+        
         trigger(target, TriggerOpTypes.SET, key, value, oldValue)
       }
     }

@@ -306,7 +306,10 @@ export function pauseScheduling() {
 }
 
 export function resetScheduling() {
+  
   pauseScheduleStack--
+
+  //当所有的触发都完成，以此运行这些任务
   while (!pauseScheduleStack && queueEffectSchedulers.length) {
     queueEffectSchedulers.shift()!()
   }
@@ -357,6 +360,7 @@ export function trackEffect(
   }
 }
 
+//effect
 const queueEffectSchedulers: EffectScheduler[] = []
 
 /**
